@@ -390,7 +390,11 @@ module RLP
         result = []
         serial.each_with_index do |e, i|
           begin
-            result.push @element_sedes.deserialize(e)
+            if @element_sedes.instance_of?(Class) && @element_sedes.include?(Sedes::Serializable)
+              result.push @element_sedes.deserialize(e, {})
+            else
+              result.push @element_sedes.deserialize(e)
+            end
           rescue DeserializationError => e
             raise ListDeserializationError.new(nil, serial, e, i)
           end
@@ -971,7 +975,7 @@ module RLP
         l = big_endian_to_int rlp[(start+1)...(start+1+ll)]
         raise DecodingError.new('Long string prefix used for short string', rlp) if l < SHORT_LENGTH_LIMIT
 
-        [:str, l, start+1+ll]
+        [:str, l.to_fix, start+1+ll]
       elsif b0 < LIST_PREFIX_OFFSET + SHORT_LENGTH_LIMIT # short list
         [:list, b0 - LIST_PREFIX_OFFSET, start + 1]
       else # long list
@@ -981,7 +985,7 @@ module RLP
         l = big_endian_to_int rlp[(start+1)...(start+1+ll)]
         raise DecodingError.new('Long list prefix used for short list', rlp) if l < SHORT_LENGTH_LIMIT
 
-        [:list, l, start+1+ll]
+        [:list, l.to_fix, start+1+ll]
       end
     end
 

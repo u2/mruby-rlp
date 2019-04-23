@@ -1,4 +1,3 @@
-
 include RLP
 include RLP::Utils
 
@@ -411,13 +410,13 @@ assert("test_serializable") do
   # # mutability
   t1a.field1 += 1
   t1a.field2 = 'x'
-  assert_true 6, t1a.field1
-  assert_true 'x', t1a.field2
+  assert_equal 6, t1a.field1
+  assert_equal 'x', t1a.field2
 
   t1a.field1 -= 1
   t1a.field2 = 'a'
-  assert_true 5, t1a.field1
-  assert_true 'a', t1a.field2
+  assert_equal 5, t1a.field1
+  assert_equal 'a', t1a.field2
 
   # inference
   assert_equal Test1, Sedes.infer(t1a)
