@@ -2,7 +2,7 @@ module RLP
 
   module Constant
     SHORT_LENGTH_LIMIT = 56
-    LONG_LENGTH_LIMIT = 256**8
+    # LONG_LENGTH_LIMIT = 256**8
 
     PRIMITIVE_PREFIX_OFFSET = 0x80
     LIST_PREFIX_OFFSET = 0xc0
@@ -203,12 +203,11 @@ module RLP
       bytes?(v) ? v : v.b
     end
 
-    def big_endian_to_int(v)
-      v.unpack('H*').first.to_i(16)
+    def big_endian_to_hex(v)
+      v.unpack('H*').first
     end
 
-    def int_to_big_endian(v)
-      hex = v.to_s(16)
+    def int_to_big_endian(hex)
       if hex.size % 2 == 1 
         hex = "0#{hex}"
       end
@@ -247,6 +246,7 @@ module RLP
       #
       # @raise [TypeError] if no appropriate sedes could be found
       #
+      # TODO: because of not support the bignum, we use hex. So the infer would not work for bignum
       def infer(obj)
         return obj.class if sedes?(obj.class)
         return big_endian_int if obj.is_a?(Integer) && obj >= 0
@@ -282,16 +282,20 @@ module RLP
         @size = size
       end
 
-      def serialize(obj)
-        raise SerializationError.new("Can only serialize integers", obj) unless obj.is_a?(Integer) or obj.is_a?(Bignum)
-        raise SerializationError.new("Cannot serialize negative integers", obj) if obj < 0
+      def serialize(hex_str)
+        # raise SerializationError.new("Can only serialize integers", obj) unless obj.is_a?(Integer) or obj.is_a?(Bignum)
+        # raise SerializationError.new("Cannot serialize negative integers", obj) if obj < 0
 
-        if @size && obj >= 256**@size
-          msg = "Integer too large (does not fit in #{@size} bytes)"
-          raise SerializationError.new(msg, obj)
+        # if @size && obj >= 256**@size
+        #   msg = "Integer too large (does not fit in #{@size} bytes)"
+        #   raise SerializationError.new(msg, obj)
+        # end
+
+        if hex_str.is_a?(Integer)
+          hex_str = hex_str.to_s(16)
         end
 
-        s = obj == 0 ? BYTE_EMPTY : int_to_big_endian(obj)
+        s = (hex_str == "0" or hex_str == "00") ? BYTE_EMPTY : int_to_big_endian(hex_str)
 
         @size ? "#{BYTE_ZERO * [0, @size-s.size].max}#{s}" : s
       end
@@ -301,7 +305,7 @@ module RLP
         raise DeserializationError.new("Invalid serialization (not minimal length)", serial) if !@size && serial.size > 0 && serial[0] == BYTE_ZERO
 
         serial = serial || BYTE_ZERO
-        big_endian_to_int(serial)
+        big_endian_to_hex(serial)
       end
     end
 
@@ -778,12 +782,12 @@ module RLP
     def length_prefix(length, offset)
       if length < SHORT_LENGTH_LIMIT
         (offset+length).chr
-      elsif length < LONG_LENGTH_LIMIT
-        length_string = int_to_big_endian(length)
+      else# length < LONG_LENGTH_LIMIT
+        length_string = int_to_big_endian(length.to_s(16))
         length_len = (offset + SHORT_LENGTH_LIMIT - 1 + length_string.size).chr
         "#{length_len}#{length_string}"
-      else
-        raise ArgumentError, "Length greater than 256**8"
+      # else
+      #   raise ArgumentError, "Length greater than 256**8"
       end
     end
   end
@@ -972,20 +976,21 @@ module RLP
         raise DecodingError.new("Length starts with zero bytes", rlp) if rlp.slice(start+1) == BYTE_ZERO
 
         ll = b0 - PRIMITIVE_PREFIX_OFFSET - SHORT_LENGTH_LIMIT + 1
-        l = big_endian_to_int rlp[(start+1)...(start+1+ll)]
+        l = big_endian_to_hex(rlp[(start+1)...(start+1+ll)]).to_i(16)
         raise DecodingError.new('Long string prefix used for short string', rlp) if l < SHORT_LENGTH_LIMIT
 
-        [:str, l.to_fix, start+1+ll]
+        [:str, l, start+1+ll]
       elsif b0 < LIST_PREFIX_OFFSET + SHORT_LENGTH_LIMIT # short list
         [:list, b0 - LIST_PREFIX_OFFSET, start + 1]
       else # long list
         raise DecodingError.new('Length starts with zero bytes', rlp) if rlp.slice(start+1) == BYTE_ZERO
 
         ll = b0 - LIST_PREFIX_OFFSET - SHORT_LENGTH_LIMIT + 1
-        l = big_endian_to_int rlp[(start+1)...(start+1+ll)]
+        l = big_endian_to_hex(rlp[(start+1)...(start+1+ll)]).to_i(16)
+        ## TODO: l shoub be not out of range of Fixnum
         raise DecodingError.new('Long list prefix used for short list', rlp) if l < SHORT_LENGTH_LIMIT
 
-        [:list, l.to_fix, start+1+ll]
+        [:list, l, start+1+ll]
       end
     end
 

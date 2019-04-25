@@ -22,8 +22,6 @@ MRuby::Gem::Specification.new('mruby-rlp') do |spec|
   spec.add_dependency('mruby-class-ext', :core => 'mruby-class-ext')
   spec.add_dependency('mruby-compiler', :core => 'mruby-compiler')
 
-  # TODO
-  spec.add_dependency('mruby-bignum', :core => 'mruby-bignum')
   spec.add_dependency('mruby-metaprog', :core => 'metaprog')
 end
   
