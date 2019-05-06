@@ -21,7 +21,7 @@ MRuby::Gem::Specification.new('mruby-rlp') do |spec|
   spec.add_dependency('mruby-kernel-ext', :core => 'mruby-kernel-ext')
   spec.add_dependency('mruby-class-ext', :core => 'mruby-class-ext')
   spec.add_dependency('mruby-compiler', :core => 'mruby-compiler')
-
+  spec.add_dependency('mruby-print', :core => 'mruby-print')
   spec.add_dependency('mruby-metaprog', :core => 'metaprog')
 end
   
